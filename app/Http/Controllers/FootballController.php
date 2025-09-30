@@ -4,9 +4,26 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Services\NFLPositionStats;
 
 class FootballController extends Controller
 {
+    private $nflPositions = [
+        'QB' => 'Quarterback',
+        'RB' => 'Running Back',
+        'WR' => 'Wide Receiver',
+        'TE' => 'Tight End',
+        'C' => 'Center',
+        'G' => 'Guard',
+        'T' => 'Tackle',
+        'S' => 'Safety',
+        'CB' => 'Cornerback',
+        'LB' => 'Linebacker',
+        'DE' => 'Defensive End',
+        'DT' => 'Defensive Tackle',
+        'SS' => 'Strong Safety',
+        'FS' => 'Free Safety',
+    ];
     public function getAllTeams()
     {
         $url = "https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams";
@@ -136,6 +153,7 @@ class FootballController extends Controller
                     'name' => $playerRes['displayName'] ?? null,
                     'jersey' => $playerRes['jersey'] ?? null,
                     'position' => $playerRes['position']['displayName'] ?? null,
+                    'position_abbreviation' => $playerRes['position']['abbreviation'] ?? null,
                     'headshot' => $playerRes['headshot']['href'] ?? null,
                 ];
             }
@@ -204,16 +222,15 @@ class FootballController extends Controller
         ]);
     }
 
-    public function individualPlayerStats($playerId, $position)
+    public function individualPlayerStats($playerId, String $position)
     {
         $url = "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/{$playerId}/statistics/0?lang=en&region=us";
         
         try {
-            $response = Http::get($url);
+            $nflPositionStats = new NFLPositionStats();
+            $stats = $nflPositionStats->getStats($position, $url);
 
-            if ($response->successful()) {
-                
-            }
+            return response()->json($stats);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Exception occurred',
